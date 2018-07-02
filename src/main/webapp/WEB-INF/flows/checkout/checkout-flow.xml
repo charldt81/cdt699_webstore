@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>		
+
+<!-- Added this 'checkout-flow.xml' file from Chapter_10 -->
+<!-- Here we created our first flow definition file, called 'checkoutflow.xml' -->
+
+<!-- A flow definition is composed of a set of states. Each state will have a unique ID in the flow definition. 
+	 There are six types of state available in Spring Web Flow. -->
+
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+      					  http://www.springframework.org/schema/webflow/spring-webflow.xsd">
+
+
+		<!-- The <var/> tag creates a variable in a flow. This variable will be available to all states in a flow, which means we can 
+			 reference and use this variable inside any state within the flow. In the preceding <var/> tag, we just created a new instance of the 
+			 Order class and stored it in a variable called order. -->
+		<var name="order" class="com.packt.webstore.domain.Order"/>
+		
+		
+		
+<!-- 1) start-state: Each flow must have a single start state, which helps in creating the initial state of the flow. Note that if the start-state 
+			 	     is not specified, the very first defined state within the flow definition file becomes the start state. -->
+		
+		
+		
+<!-- 2) action-state: A flow can have many action states; an action-state executes a particular action. An action normally involves interacting 
+				      with backend services, such as executing some methods in Spring managed beans; Spring Web Flow uses the Spring Expression 
+				      Language to interact with the backend service beans. -->
+		<action-state id="addCartToOrder">
+				<evaluate expression="cartServiceImpl.validate(requestParameters.cartId)" result="order.cart" />
+				<transition to="invalidCartWarning" on-exception="com.packt.webstore.exception.InvalidCartException" />
+				<transition to="collectCustomerInfo" />
+		</action-state>
+		
+		
+		
+<!-- 3) view-state: A view-state defines a logical View and Model to interact with the end user. A web flow can have multiple view-states. 
+				    If the View attribute is not specified, then the ID of the view-state acts as the logical View name. -->
+		<view-state id="collectCustomerInfo" view="collectCustomerInfo.jsp" model="order">
+				<transition on="customerInfoCollected" to="collectShippingDetail" />
+		</view-state>
+		
+		<view-state id="collectShippingDetail" model="order">
+				<transition on="shippingDetailCollected" to="orderConfirmation" />
+				<transition on="backToCollectCustomerInfo" to="collectCustomerInfo" />
+		</view-state>
+		
+		<view-state id="orderConfirmation">
+				<transition on="orderConfirmed" to="processOrder" />
+				<transition on="backToCollectShippingDetail" to="collectShippingDetail" />
+		</view-state>
+		
+		
+		
+		<action-state id="processOrder">
+				<evaluate expression="orderServiceImpl.saveOrder(order)" result="order.orderId"/>
+				<transition to="thankCustomer" />
+		</action-state>
+		
+		
+		
+		<view-state id="invalidCartWarning">
+				<transition to="endState"/>
+		</view-state>
+		
+		<view-state id="thankCustomer" model="order">
+				<transition to="endState"/>
+		</view-state>
+		
+		
+		
+<!-- 4) decision-state: This is used to branch the flow; based on a test condition it routes the transition to the next possible state. -->
+		
+		
+		
+<!-- 5) subflow-state: It is an independent flow that can be reused from inside another flow. When an application enters a subflow, 
+				       the main flow is paused until the subflow completes. -->
+				
+				
+				
+<!-- 6) end-state: This state denotes the end of a flow execution. A web flow can have multiple end states; through the view attribute 
+				   of an end-state, we can specify a View that will be rendered when its end state is reached. -->
+		<end-state id="endState"/>
+		
+		<end-state id="cancelCheckout" view="checkOutCancelled.jsp"/>
+		
+		
+		
+		<!-- The transition to the cancelCheckout end state happened through the global transitions configuration: -->
+		<global-transitions>
+				<transition on="cancel" to="cancelCheckout" />
+		</global-transitions>
+
+</flow>
+
+
+
+
+
+
